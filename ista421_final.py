@@ -13,7 +13,7 @@ for index, row in df.iterrows():
 # Features and response variable
 country = df["country"]
 industry = df["industry"]
-attacks = df["attack_type"]
+severity = df["severity_level"]
 
 
 def find_freq(col):
@@ -35,13 +35,18 @@ def find_freq(col):
 
 country_freq = find_freq(country)
 industry_freq = find_freq(industry)
-attacks_freq = find_freq(attacks)
+severe_freq = find_freq(severity)
 
 
 def eda_hist():
+    """
+    Plots the frequency of each category for the features and response variable.
+
+    return: Nothing is returned by this function, as a plot is created.
+    """
     plt.bar(list(country_freq.keys()), list(country_freq.values()), color='g', label='Countries')
     plt.bar(list(industry_freq.keys()), list(industry_freq.values()), color='orange', label='Industries')
-    plt.bar(list(attacks_freq.keys()), list(attacks_freq.values()), color='b', label='Attack type')
+    plt.bar(list(severe_freq.keys()), list(severe_freq.values()), color='b', label='Severity Level')
 
     # Add labels and title
     plt.xlabel('Value')
@@ -55,6 +60,24 @@ def eda_hist():
     plt.legend(loc='upper right')
 
 
+# One hot-encoded variables
+df_dumb = pd.get_dummies(df, columns=['country', 'industry'], drop_first=True, dtype=int)
+
+#print(df_dumb.columns)
+
+
+response_vals = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
+severity_num = []
+
+for i in df_dumb["severity_level"]:
+    if i == "Low":
+        severity_num.append(response_vals["Low"])
+    elif i == "Medium":
+        severity_num.append(response_vals["Medium"])
+    elif i == "High":
+        severity_num.append(response_vals["High"])
+    else:
+        severity_num.append(response_vals["Critical"])
 
 
 
@@ -63,9 +86,24 @@ def eda_hist():
 
 
 
+# need to model Low vs Critical
+#               Medium vs Critical
+#               High vs Critical
+# log odds
+
+
+def log_odds(intercept, change):
+    pass
+    # intercept
+    # intercept + sum of each coefficient for severity level * the feature
+
+
+# reference industry: Education
+# reference country: Australia
+# reference severity: Critical
 
 def main():
-    eda_hist()
+    #eda_hist()
     plt.show()
 
 
