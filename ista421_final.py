@@ -102,20 +102,45 @@ n_severity = n_classes - 1
 # betas = np.zeros((n_severity, X_np.shape[1]))
 np.random.seed(42)
 betas = np.random.randn(n_severity, X_np.shape[1])
+#print(betas)
 
 
 def log_odds(intercept, beta):
+    """
+    This function calculates the log odds for each category from the response
+    variable vs the reference/baseline category, which is the "Critical"
+    severity level.
+
+    intercept: A 2D Numpy array that has the predictor and intercept.
+    beta: A 2D Numpy array that has the beta values for each category.
+
+    return: A 2D Numpy array that has the log-odds value for each observation,
+    with the baseline column set to 0.
+    """
     odds = np.matmul(intercept, beta.T)
     odds = np.hstack([odds, np.zeros((intercept.shape[0], 1))])
     return odds
 
 
 odds_vals = log_odds(X_np, betas)
-print(odds_vals)
+#print(odds_vals)
 
 
-def softmax(intercept, beta):
-    
+def softmax(odds):
+    """
+    This function implements the softmax coding, and turns the log-odds into
+    probabilities.
+
+    odds: Odds is a Numpy array that contains the log-odds values that are to
+    be turned into probabilities.
+
+    return: A 2D Numpy array that has the probability of each row.
+    """
+    exp_vals = np.exp(odds - np.max(odds, axis=1, keepdims=True))
+    return exp_vals / np.sum(exp_vals, axis=1, keepdims=True)
+
+
+print(softmax(odds_vals))
 
 
 
