@@ -89,30 +89,35 @@ y = np.array(severity_num)
 
 X = X.copy()
 X["Intercept"] = [1 for i in range(len(X))]
-
-
-count = 0
-for i in X["Intercept"]:
-    print(count, i)
-    count += 1
-
 X_np = X.to_numpy()
 
+n_obs = 1000
+n_features = 1000
+
+n_classes = 4
+critical = 3
+n_severity = n_classes - 1
+
+# Set betas to 0
+# betas = np.zeros((n_severity, X_np.shape[1]))
+np.random.seed(42)
+betas = np.random.randn(n_severity, X_np.shape[1])
 
 
+def log_odds(intercept, beta):
+    odds = np.matmul(intercept, beta.T)
+    odds = np.hstack([odds, np.zeros((intercept.shape[0], 1))])
+    return odds
 
 
-
-# need to model Low vs Critical
-#               Medium vs Critical
-#               High vs Critical
-# log odds
+odds_vals = log_odds(X_np, betas)
+print(odds_vals)
 
 
-def log_odds(intercept, change):
-    pass
-    # intercept
-    # intercept + sum of each coefficient for severity level * the feature
+def softmax(intercept, beta):
+    
+
+
 
 
 # reference industry: Education
