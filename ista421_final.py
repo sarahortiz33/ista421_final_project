@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# move to main
 df = pd.read_csv("cybersecurity_incidents.csv")
 
 # Check for missing values in the dataset
@@ -99,10 +100,11 @@ critical = 3
 n_severity = n_classes - 1
 
 # Set betas to 0
-# betas = np.zeros((n_severity, X_np.shape[1]))
+#betas = np.zeros((n_severity, X_np.shape[1]))
+
 np.random.seed(42)
 betas = np.random.randn(n_severity, X_np.shape[1])
-#print(betas)
+# print(betas)
 
 
 def log_odds(intercept, beta):
@@ -117,13 +119,10 @@ def log_odds(intercept, beta):
     return: A 2D Numpy array that has the log-odds value for each observation,
     with the baseline column set to 0.
     """
+    # Calculates log-odds and adds a column of 0's represent the baseline.
     odds = np.matmul(intercept, beta.T)
     odds = np.hstack([odds, np.zeros((intercept.shape[0], 1))])
     return odds
-
-
-odds_vals = log_odds(X_np, betas)
-#print(odds_vals)
 
 
 def softmax(odds):
@@ -140,7 +139,47 @@ def softmax(odds):
     return exp_vals / np.sum(exp_vals, axis=1, keepdims=True)
 
 
-print(softmax(odds_vals))
+# print(softmax(odds_vals))
+
+
+def ridge_likelihood(X, y, beta, tuning):
+    """
+    Finds the negative log-likelihood and implements ridge regression.
+
+    X: A 2D Numpy array that contains the features for each observation.
+    y: A 2D Numpy array that has the categories from the response variable.
+    beta: A 2D Numpy array that is the coefficient matrix for the model.
+    tuning: A float that is Regularization strength (λ)
+
+    return: A float that is the calculated negative log-likelihood.
+    """
+    odds = log_odds(X, beta)
+    prob = softmax(odds)
+
+    # Takes the log of the probabilities from each category that corresponds
+    # to the response variable and sums it up to get the negative log likelihood
+    log_probs = np.log(prob[np.arange(1000), y])
+    neg_likely = -np.sum(log_probs)
+
+    # Adds penalty via ridge regression
+    ridge_penalty = tuning * np.sum(beta[:, :-1] ** 2)
+
+    return neg_likely + ridge_penalty
+
+
+learning_rate = 0.00001
+iterations = 1000
+m = X_np.shape[0]
+
+
+for i in range(iterations):
+    y_pred = np.matmul(intercept_term, betas)
+    error = y_pred - y
+    gradients = (1/m) * (np.matmul(intercept_term.T, error))
+    betas = betas - learning_rate * gradients
+
+y_pred_gd = np.matmul(intercept_term, betas)
+
 
 
 
@@ -149,8 +188,13 @@ print(softmax(odds_vals))
 # reference country: Australia
 # reference severity: Critical
 
+
 def main():
     # eda_hist()
+    log_odds(X_np, betas)
+    # print(odds_vals)
+
+    print(ridge_likelihood(X, y, betas, 2.0))
     plt.show()
 
 
