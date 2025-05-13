@@ -63,7 +63,7 @@ def eda_hist():
 # One hot-encoded variables
 df_dumb = pd.get_dummies(df, columns=['country', 'industry'], drop_first=True, dtype=int)
 
-#print(df_dumb.columns)
+# print(df_dumb.columns)
 
 
 response_vals = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
@@ -79,7 +79,24 @@ for i in df_dumb["severity_level"]:
     else:
         severity_num.append(response_vals["Critical"])
 
+X = df_dumb[['country_Brazil', 'country_Canada', 'country_China',
+             'country_France', 'country_Germany', 'country_India',
+             'country_Russia', 'country_UK', 'country_USA', 'industry_Finance',
+             'industry_Government', 'industry_Healthcare',
+             'industry_Manufacturing', 'industry_Retail', 'industry_Tech']]
 
+y = np.array(severity_num)
+
+X = X.copy()
+X["Intercept"] = [1 for i in range(len(X))]
+
+
+count = 0
+for i in X["Intercept"]:
+    print(count, i)
+    count += 1
+
+X_np = X.to_numpy()
 
 
 
@@ -103,7 +120,7 @@ def log_odds(intercept, change):
 # reference severity: Critical
 
 def main():
-    #eda_hist()
+    # eda_hist()
     plt.show()
 
 
