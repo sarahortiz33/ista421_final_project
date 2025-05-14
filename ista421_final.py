@@ -239,7 +239,8 @@ def main():
     eda_hist(country_freq, industry_freq, severe_freq)
 
     # One hot-encoded variables
-    df_dumb = pd.get_dummies(df, columns=['country', 'industry'], drop_first=True, dtype=int)
+    df_dumb = pd.get_dummies(df, columns=['country', 'industry'],
+                             drop_first=True, dtype=int)
     response_vals = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
     severity_num = []
 
@@ -257,9 +258,10 @@ def main():
 
     X = df_dumb[['country_Brazil', 'country_Canada', 'country_China',
                  'country_France', 'country_Germany', 'country_India',
-                 'country_Russia', 'country_UK', 'country_USA', 'industry_Finance',
-                 'industry_Government', 'industry_Healthcare',
-                 'industry_Manufacturing', 'industry_Retail', 'industry_Tech']]
+                 'country_Russia', 'country_UK', 'country_USA',
+                 'industry_Finance', 'industry_Government',
+                 'industry_Healthcare', 'industry_Manufacturing',
+                 'industry_Retail', 'industry_Tech']]
     y = np.array(severity_num)
     X = X.copy()
     X["Intercept"] = [1 for i in range(len(X))]
