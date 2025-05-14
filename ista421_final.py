@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold
 
 
 def find_freq(col):
@@ -90,7 +91,7 @@ def ridge_likelihood(X, y, beta, tuning):
 
     # Takes the log of the probabilities from each category that corresponds
     # to the response variable and sums it up to get the negative log likelihood
-    log_probs = np.log(prob[np.arange(1000), y])
+    log_probs = np.log(prob[np.arange(X.shape[0]), y])
     neg_likely = -np.sum(log_probs)
 
     # Adds penalty via ridge regression
@@ -101,7 +102,7 @@ def ridge_likelihood(X, y, beta, tuning):
 
 def gradient_descent(X, y, beta, learning_rate, iterations, tuning):
     n_category = beta.shape[0]
-    loss = []
+    loss = {}
 
     # Loops through to calculate the gradient and update the beta values.
     for i in range(iterations):
@@ -117,10 +118,38 @@ def gradient_descent(X, y, beta, learning_rate, iterations, tuning):
 
         beta = beta - learning_rate * gradients
 
+        if i % 50 == 0:
+            loss[i] = float(ridge_likelihood(X, y, beta, tuning))
+
+    return beta, loss
+
+
+def loss_plot(loss):
+    pass
+
+
+def k_cv(X, y, n_severity):
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    accuracies = []
+
+    for train_index, val_index in kf.split(X):
+        X_train = X[train_index]
+        X_test = X[val_index]
+        y_train = y[train_index]
+        y_test = y[val_index]
+
+        fold = np.zeros((n_severity, X_train.shape[1]))
+
+        grad_des = gradient_descent(X_train, y_train, fold,
+                                    learning_rate=0.01, iterations=1000,
+                                    tuning=0.1)
+        fold = grad_des[0]
+
+        val_odds = log_odds(X_test, fold)
+        val_probs = softmax(val_odds)
 
 
 
-    return beta
 
 
 def main():
@@ -168,11 +197,7 @@ def main():
     X["Intercept"] = [1 for i in range(len(X))]
     X_np = X.to_numpy()
 
-    n_obs = 1000
-    n_features = 1000
-
     n_classes = 4
-    critical = 3
     n_severity = n_classes - 1
 
     # Set betas to 0
@@ -184,14 +209,13 @@ def main():
     # print(betas)
 
     # Begin to compute gradient descent
-    new_betas = gradient_descent(X_np, y, betas, 0.01, 1000, 0.1)
+    grad_des = gradient_descent(X_np, y, betas, 0.01, 1000, 0.1)
+    new_betas = grad_des[0]
+    loss = grad_des[1]
 
+    print(loss)
 
-
-
-    log_odds(X_np, betas)
-    # print(odds_vals)
-
+    k_cv(X_np, y, n_severity)
 
     plt.show()
 
