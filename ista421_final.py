@@ -3,6 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold
 
+"""
+This file contains a multinomial logistic regression model that uses the 
+cybersecurity_incidents.csv file as its dataset. From this file, the columns
+country and industry are the predictors, and the column severity_level is the
+response variable. This is because the model is meant to determine if there are
+any industries in specific countries that are more severely attacked. The model
+also utilizes ridge regularization to avoid multicollinearity and overfitting.
+The model is also cross validated by using K-fold cross validation, and helps
+in determining the predictive accuracy of the model.  
+"""
+
 
 def find_freq(col):
     """
@@ -27,14 +38,18 @@ def eda_hist(country_freq, industry_freq, severe_freq):
 
     return: Nothing is returned by this function, as a plot is created.
     """
-    plt.bar(list(country_freq.keys()), list(country_freq.values()), color='g', label='Countries')
-    plt.bar(list(industry_freq.keys()), list(industry_freq.values()), color='orange', label='Industries')
-    plt.bar(list(severe_freq.keys()), list(severe_freq.values()), color='b', label='Severity Level')
+    plt.bar(list(country_freq.keys()), list(country_freq.values()), color='g',
+            label='Countries')
+    plt.bar(list(industry_freq.keys()), list(industry_freq.values()),
+            color='orange', label='Industries')
+    plt.bar(list(severe_freq.keys()), list(severe_freq.values()), color='b',
+            label='Severity Level')
 
     # Add labels and title
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.title('Histogram of Multiple Variables')
+    plt.xlabel('Value', fontsize=15)
+    plt.ylabel('Frequency', fontsize=15)
+    plt.title('Frequency of Feature and Response Variable Categories',
+              fontsize=20)
 
     plt.xticks(rotation=45)
     plt.xlim(-0.5)
@@ -101,6 +116,22 @@ def ridge_likelihood(X, y, beta, tuning):
 
 
 def gradient_descent(X, y, beta, learning_rate, iterations, tuning):
+    """
+    This function implements gradient descent to optimize the betas. The
+    softmax function is used to compute probabilities and also minimizes the
+    log-likelihood with ridge.
+
+    X: A 2D Numpy array that contains the features for each observation.
+    y: A Numpy array that has the categories from the response variable.
+    beta: A 2D Numpy array that is the coefficient matrix for the model.
+    learning_rate: A float that controls the step size for each iteration.
+    iterations: An int that is the number of times the for loop in the function
+    is meant to iterate.
+    tuning: A float that is the tuning parameter for
+
+    return: A tuple containing the new beta values and a dictionary of the loss
+    values and their iteration is returned.
+    """
     n_category = beta.shape[0]
     loss = {}
 
@@ -109,15 +140,15 @@ def gradient_descent(X, y, beta, learning_rate, iterations, tuning):
         odds = log_odds(X, beta)
         prob = softmax(odds)
 
-        # predicted p-y
         prob[np.arange(X.shape[0]), y] -= 1
 
-        # Multiplication with feature variables
+        # Multiplication with feature variables.
         gradients = np.matmul(prob[:, :n_category].T, X) / X.shape[0]
         gradients += tuning * beta
 
         beta = beta - learning_rate * gradients
 
+        # Adds every few iterations to loss dictionary.
         if i % 50 == 0:
             loss[i] = float(ridge_likelihood(X, y, beta, tuning))
 
@@ -125,14 +156,44 @@ def gradient_descent(X, y, beta, learning_rate, iterations, tuning):
 
 
 def loss_plot(loss):
-    pass
+    """
+    Plots the loss values calculated from the gradient descent function.
+
+    loss: A dictionary that has the iteration number (index), as its keys, and
+    the loss value as its corresponding value.
+
+    return: Nothing is returned by this function as it crates a plot.
+    """
+    plt.figure()
+
+    plt.bar(list(loss.keys()), list(loss.values()), width=10.0)
+
+    # Add labels and title
+    plt.xlabel('Iteration Number', fontsize=15)
+    plt.ylabel('Loss value', fontsize=15)
+    plt.title('Loss over Iterations', fontsize=20)
+
+    plt.xticks(np.arange(0, 1001, 50))
 
 
 def k_cv(X, y, n_severity):
+    """
+    This function cross validates the model by using K-fold.
+
+    X: A 2D Numpy array that has the feature variables.
+    y: A 1D Numpy array that has the response variable.
+    n_severity: An int that has the number of categories in the response
+    variable.
+
+    return: Nothing is returned by this function.
+    """
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     accuracies = []
 
+    # Loops through to train the model and validate it
     for train_index, val_index in kf.split(X):
+
+        # Splits data for training and testing.
         X_train = X[train_index]
         X_test = X[val_index]
         y_train = y[train_index]
@@ -140,6 +201,7 @@ def k_cv(X, y, n_severity):
 
         fold = np.zeros((n_severity, X_train.shape[1]))
 
+        # Use gradient descent to adjust betas.
         grad_des = gradient_descent(X_train, y_train, fold,
                                     learning_rate=0.01, iterations=1000,
                                     tuning=0.1)
@@ -148,8 +210,12 @@ def k_cv(X, y, n_severity):
         val_odds = log_odds(X_test, fold)
         val_probs = softmax(val_odds)
 
+        # Predict classes and calculate model accuracy.
+        y_pred = np.argmax(val_probs, axis=1)
+        accuracy = np.mean(y_pred == y_test)
+        accuracies.append(float(accuracy))
 
-
+    print("Average Accuracy:", np.mean(accuracies))
 
 
 def main():
@@ -170,13 +236,15 @@ def main():
     industry_freq = find_freq(industry)
     severe_freq = find_freq(severity)
 
-    #eda_hist(country_freq, industry_freq, severe_freq)
+    eda_hist(country_freq, industry_freq, severe_freq)
 
     # One hot-encoded variables
     df_dumb = pd.get_dummies(df, columns=['country', 'industry'], drop_first=True, dtype=int)
     response_vals = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
     severity_num = []
 
+    # Loops through to give numerical value to the categories in the response
+    # variable.
     for i in df_dumb["severity_level"]:
         if i == "Low":
             severity_num.append(response_vals["Low"])
@@ -200,20 +268,20 @@ def main():
     n_classes = 4
     n_severity = n_classes - 1
 
-    # Set betas to 0
-    betas = np.zeros((n_severity, X_np.shape[1]))
+    # Sets betas as random numbers.
+    np.random.seed(42)
+    betas = np.random.randn(n_severity, X_np.shape[1])
+    print("Old betas:", betas)
+    print()
 
-    # !!!!RANDOM NUMBER BETA!!!!!
-    # np.random.seed(42)
-    # betas = np.random.randn(n_severity, X_np.shape[1])
-    # print(betas)
-
-    # Begin to compute gradient descent
+    # Runs the gradient descent function.
     grad_des = gradient_descent(X_np, y, betas, 0.01, 1000, 0.1)
     new_betas = grad_des[0]
     loss = grad_des[1]
 
-    print(loss)
+    print("New betas after gradient descent:", new_betas)
+
+    loss_plot(loss)
 
     k_cv(X_np, y, n_severity)
 
