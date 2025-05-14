@@ -2,20 +2,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# move to main
-df = pd.read_csv("cybersecurity_incidents.csv")
-
-# Check for missing values in the dataset
-for index, row in df.iterrows():
-    for col in df.columns:
-        if pd.isna(row[col]):
-            print("Missing value at row:", index, " column", col)
-
-# Features and response variable
-country = df["country"]
-industry = df["industry"]
-severity = df["severity_level"]
-
 
 def find_freq(col):
     """
@@ -34,12 +20,7 @@ def find_freq(col):
     return freq
 
 
-country_freq = find_freq(country)
-industry_freq = find_freq(industry)
-severe_freq = find_freq(severity)
-
-
-def eda_hist():
+def eda_hist(country_freq, industry_freq, severe_freq):
     """
     Plots the frequency of each category for the features and response variable.
 
@@ -59,52 +40,6 @@ def eda_hist():
     plt.tight_layout()
 
     plt.legend(loc='upper right')
-
-
-# One hot-encoded variables
-df_dumb = pd.get_dummies(df, columns=['country', 'industry'], drop_first=True, dtype=int)
-
-# print(df_dumb.columns)
-
-
-response_vals = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
-severity_num = []
-
-for i in df_dumb["severity_level"]:
-    if i == "Low":
-        severity_num.append(response_vals["Low"])
-    elif i == "Medium":
-        severity_num.append(response_vals["Medium"])
-    elif i == "High":
-        severity_num.append(response_vals["High"])
-    else:
-        severity_num.append(response_vals["Critical"])
-
-X = df_dumb[['country_Brazil', 'country_Canada', 'country_China',
-             'country_France', 'country_Germany', 'country_India',
-             'country_Russia', 'country_UK', 'country_USA', 'industry_Finance',
-             'industry_Government', 'industry_Healthcare',
-             'industry_Manufacturing', 'industry_Retail', 'industry_Tech']]
-
-y = np.array(severity_num)
-
-X = X.copy()
-X["Intercept"] = [1 for i in range(len(X))]
-X_np = X.to_numpy()
-
-n_obs = 1000
-n_features = 1000
-
-n_classes = 4
-critical = 3
-n_severity = n_classes - 1
-
-# Set betas to 0
-#betas = np.zeros((n_severity, X_np.shape[1]))
-
-np.random.seed(42)
-betas = np.random.randn(n_severity, X_np.shape[1])
-# print(betas)
 
 
 def log_odds(intercept, beta):
@@ -139,15 +74,12 @@ def softmax(odds):
     return exp_vals / np.sum(exp_vals, axis=1, keepdims=True)
 
 
-# print(softmax(odds_vals))
-
-
 def ridge_likelihood(X, y, beta, tuning):
     """
     Finds the negative log-likelihood and implements ridge regression.
 
     X: A 2D Numpy array that contains the features for each observation.
-    y: A 2D Numpy array that has the categories from the response variable.
+    y: A Numpy array that has the categories from the response variable.
     beta: A 2D Numpy array that is the coefficient matrix for the model.
     tuning: A float that is Regularization strength (λ)
 
@@ -167,34 +99,100 @@ def ridge_likelihood(X, y, beta, tuning):
     return neg_likely + ridge_penalty
 
 
-learning_rate = 0.00001
-iterations = 1000
-m = X_np.shape[0]
+def gradient_descent(X, y, beta, learning_rate, iterations, tuning):
+    n_category = beta.shape[0]
+    loss = []
+
+    # Loops through to calculate the gradient and update the beta values.
+    for i in range(iterations):
+        odds = log_odds(X, beta)
+        prob = softmax(odds)
+
+        # predicted p-y
+        prob[np.arange(X.shape[0]), y] -= 1
+
+        # Multiplication with feature variables
+        gradients = np.matmul(prob[:, :n_category].T, X) / X.shape[0]
+        gradients += tuning * beta
+
+        beta = beta - learning_rate * gradients
 
 
-for i in range(iterations):
-    y_pred = np.matmul(intercept_term, betas)
-    error = y_pred - y
-    gradients = (1/m) * (np.matmul(intercept_term.T, error))
-    betas = betas - learning_rate * gradients
-
-y_pred_gd = np.matmul(intercept_term, betas)
 
 
-
-
-
-# reference industry: Education
-# reference country: Australia
-# reference severity: Critical
+    return beta
 
 
 def main():
-    # eda_hist()
+    df = pd.read_csv("cybersecurity_incidents.csv")
+
+    # Check for missing values in the dataset
+    for index, row in df.iterrows():
+        for col in df.columns:
+            if pd.isna(row[col]):
+                print("Missing value at row:", index, " column", col)
+
+    # Features and response variable
+    country = df["country"]
+    industry = df["industry"]
+    severity = df["severity_level"]
+
+    country_freq = find_freq(country)
+    industry_freq = find_freq(industry)
+    severe_freq = find_freq(severity)
+
+    #eda_hist(country_freq, industry_freq, severe_freq)
+
+    # One hot-encoded variables
+    df_dumb = pd.get_dummies(df, columns=['country', 'industry'], drop_first=True, dtype=int)
+    response_vals = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
+    severity_num = []
+
+    for i in df_dumb["severity_level"]:
+        if i == "Low":
+            severity_num.append(response_vals["Low"])
+        elif i == "Medium":
+            severity_num.append(response_vals["Medium"])
+        elif i == "High":
+            severity_num.append(response_vals["High"])
+        else:
+            severity_num.append(response_vals["Critical"])
+
+    X = df_dumb[['country_Brazil', 'country_Canada', 'country_China',
+                 'country_France', 'country_Germany', 'country_India',
+                 'country_Russia', 'country_UK', 'country_USA', 'industry_Finance',
+                 'industry_Government', 'industry_Healthcare',
+                 'industry_Manufacturing', 'industry_Retail', 'industry_Tech']]
+    y = np.array(severity_num)
+    X = X.copy()
+    X["Intercept"] = [1 for i in range(len(X))]
+    X_np = X.to_numpy()
+
+    n_obs = 1000
+    n_features = 1000
+
+    n_classes = 4
+    critical = 3
+    n_severity = n_classes - 1
+
+    # Set betas to 0
+    betas = np.zeros((n_severity, X_np.shape[1]))
+
+    # !!!!RANDOM NUMBER BETA!!!!!
+    # np.random.seed(42)
+    # betas = np.random.randn(n_severity, X_np.shape[1])
+    # print(betas)
+
+    # Begin to compute gradient descent
+    new_betas = gradient_descent(X_np, y, betas, 0.01, 1000, 0.1)
+
+
+
+
     log_odds(X_np, betas)
     # print(odds_vals)
 
-    print(ridge_likelihood(X, y, betas, 2.0))
+
     plt.show()
 
 
