@@ -11,7 +11,10 @@ response variable. This is because the model is meant to determine if there are
 any industries in specific countries that are more severely attacked. The model
 also utilizes ridge regularization to avoid multicollinearity and overfitting.
 The model is also cross validated by using K-fold cross validation, and helps
-in determining the predictive accuracy of the model.  
+in determining the predictive accuracy of the model. The general outline of
+this model was formulated by using ChatGPT, which broke down the concepts and
+necessary components for this model, specifically in the building of the
+multinomial logistic regression model. 
 """
 
 
